@@ -27,10 +27,12 @@ int main(int ac, char **av)
 		av = malloc(sizeof(char *) * 32);
 		line[strcspn(line, "\n")] = 0;
 		av[0] = stkn;
+		if (strcmp(av[0], "exit") == 0)
+			exit(0);
 		i = 1;
 		while (stkn != NULL)
 		{
-		        stkn  = strtok(NULL, " \n");
+			stkn  = strtok(NULL, " \n");
 			av[i] = stkn;
 			i++;
 		}
@@ -42,12 +44,15 @@ int main(int ac, char **av)
 		}
 		else if (child == 0)
 		{
+			if (execve(line, av, NULL) == -1)
+			{
+				perror("./shell");
+				return (1);
+			}
 			execve(av[0], av, NULL);
 		}
 		else
-		{
 			wait(&status);
-		}
 	}
 	free(line);
 	return (0);
