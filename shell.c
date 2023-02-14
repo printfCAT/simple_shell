@@ -16,29 +16,38 @@ int main(int ac, char **av)
 	char *line = NULL;
 	size_t len = 0;
 	pid_t child;
-	int status;
+	int status, i;
+	char *stkn;
 
 	while (1)
 	{
 		printf("#shell$ ");
-		if (getline(&line, &len, stdin) == -1)
-			return (1);
+		getline(&line, &len, stdin);
+		stkn = strtok(line, " \n");
+		av = malloc(sizeof(char *) * 32);
 		line[strcspn(line, "\n")] = 0;
-		av[0] = line;
-		av[1] = NULL;
-		child = fork();
-		if (child == 0)
+		av[0] = stkn;
+		i = 1;
+		while (stkn != NULL)
 		{
-			if (execve(line, av, NULL) == -1)
-			{
-				perror("./shell");
-				return (1);
-			}
+		        stkn  = strtok(NULL, " \n");
+			av[i] = stkn;
+			i++;
 		}
-		else if (child > 0)
-			wait(&status);
+		child = fork();
+		if  (child == -1)
+		{
+			perror("Error");
+			return (0);
+		}
+		else if (child == 0)
+		{
+			execve(av[0], av, NULL);
+		}
 		else
-			perror("./shell");
+		{
+			wait(&status);
+		}
 	}
 	free(line);
 	return (0);
