@@ -27,8 +27,6 @@ int main(int ac, char **av)
 		av = malloc(sizeof(char *) * 32);
 		line[strcspn(line, "\n")] = 0;
 		av[0] = stkn;
-		if (strcmp(av[0], "exit") == 0)
-			exit(0);
 		i = 1;
 		while (stkn != NULL)
 		{
@@ -36,6 +34,8 @@ int main(int ac, char **av)
 			av[i] = stkn;
 			i++;
 		}
+		if (strcmp(av[0], "exit") == 0 && (av[1] == NULL))
+			exit(0);
 		child = fork();
 		if  (child == -1)
 		{
@@ -49,7 +49,6 @@ int main(int ac, char **av)
 				perror("./shell");
 				return (1);
 			}
-			execve(av[0], av, NULL);
 		}
 		else
 			wait(&status);
