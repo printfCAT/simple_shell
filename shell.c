@@ -13,46 +13,87 @@
 */
 int main(int ac, char **av)
 {
-	char *line = NULL;
+	char *line = NULL, *stkn, *command, *token, *path;
 	size_t len = 0;
 	pid_t child;
 	int status, i;
-	char *stkn;
 
 	while (1)
 	{
 		printf("#shell$ ");
-		getline(&line, &len, stdin);
-		stkn = strtok(line, " \n");
+		if (getline(&line, &len, stdin) == -1)
+			return (1);
+		stkn = strtok(line, "\n");
+		path = getenv("PATH");
+		token = strtok(path, ":");
 		av = malloc(sizeof(char *) * 32);
+		command = malloc(1024);
+		if (!av || !command)
+			return (0);
 		line[strcspn(line, "\n")] = 0;
 		av[0] = stkn;
 		i = 1;
 		while (stkn != NULL)
 		{
-			stkn  = strtok(NULL, " \n");
+			stkn  = strtok(NULL, "\n");
 			av[i] = stkn;
 			i++;
 		}
 		if (strcmp(av[0], "exit") == 0 && (av[1] == NULL))
 			exit(0);
-		child = fork();
-		if  (child == -1)
+		if (access(av[0], X_OK) == 0)
 		{
-			perror("Error");
-			return (0);
-		}
-		else if (child == 0)
-		{
-			if (execve(line, av, NULL) == -1)
+			child = fork();
+			if  (child == -1)
 			{
 				perror("./shell");
 				return (1);
 			}
+			else if (child == 0)
+			{
+				if (execve(av[0], av, NULL) == -1)
+				{
+					perror("./shell");
+					return (1);
+				}
+			}
+			else
+				wait(&status);
 		}
 		else
-			wait(&status);
+		{
+			while (token)
+			{
+				strcpy(command, token);
+				strcat(command, "/");
+				strcat(command, av[0]);
+				if (access(command, X_OK) == 0)
+				{
+					child = fork();
+					if (child == -1)
+					{
+						perror("./shell");
+						return (1);
+					}
+					else if(child == 0)
+					{
+						if (execve(command, av, NULL) == -1)
+						{
+							perror("./shell");
+							return (1);
+						}
+					}
+				else
+					wait(&status);
+				}
+				token = strtok(NULL, ":");
+			}
+		}
+		perror("./shell");
+		return (1);
 	}
 	free(line);
+	free(av);
+	free(command);
 	return (0);
 }
