@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <errno.h>
+#include "shell.h"
 /**
 * main - simple shell
 * @ac: number of items in av
