@@ -1,94 +1,76 @@
 #include "shell.h"
 /**
 * main - simple shell
-* @ac: number of items in av
-* @av: NULL terminated array of strings
 *
 * Return: 0
 */
-int main(int ac, char **av)
+int main(void)
 {
-	char *line = NULL, *stkn, *command, *token, *path;
-	size_t len = 0;
-	pid_t child;
-	int status, i;
+	char *command = (char *) malloc(sizeof(char *) * MAX_COMMAND_LENGTH);
+	char *args[MAX_NUM_ARGUMENTS], *token, **env, *full_path;
+	char prompt[MAX_COMMAND_LENGTH] = "#shell$ ";
+	int i, status;
+	ssize_t bytes_read;
+	size_t size = 0;
+	pid_t pid;
 
 	while (1)
 	{
-		printf("#shell$ ");
-		if (getline(&line, &len, stdin) == -1)
-			return (1);
-		stkn = strtok(line, "\n");
-		path = getenv("PATH");
-		token = strtok(path, ":");
-		av = malloc(sizeof(char *) * 32);
-		command = malloc(1024);
-		if (!av || !command)
-			return (0);
-		line[strcspn(line, "\n")] = 0;
-		av[0] = stkn;
-		i = 1;
-		while (stkn != NULL)
+		printf("%s", prompt);
+		fflush(stdout);
+
+		bytes_read = getline(&command, &size, stdin);
+		if (bytes_read == -1)
 		{
-			stkn  = strtok(NULL, "\n");
-			av[i] = stkn;
+			printf("\n");
+			break;
+		}
+		command[bytes_read - 1] = '\0';
+		i = 0;
+		token = strtok(command, " ");
+		while (token != NULL && i < MAX_NUM_ARGUMENTS - 1)
+		{
+			args[i] = token;
+			token = strtok(NULL, " ");
 			i++;
 		}
-		if (strcmp(av[0], "exit") == 0 && (av[1] == NULL))
+		args[i] = NULL;
+		if (strcmp(args[0], "exit") == 0)
 			exit(0);
-		if (access(av[0], X_OK) == 0)
+		if (strcmp(args[0], "env") == 0)
 		{
-			child = fork();
-			if  (child == -1)
+			env = environ;
+			while (*env != NULL)
 			{
-				perror("./shell");
-				return (1);
+				printf("%s\n", *env);
+				env++;
 			}
-			else if (child == 0)
-			{
-				if (execve(av[0], av, NULL) == -1)
-				{
-					perror("./shell");
-					return (1);
-				}
-			}
-			else
-				wait(&status);
+			continue;
+		}
+		full_path = get_full_path(args[0]);
+		if (full_path == NULL)
+		{
+			printf("%s: command not found\n", args[0]);
+			continue;
+		}
+		pid = fork();
+		if (pid == -1)
+		{
+			perror("fork");
+			exit(1);
+		}
+		else if (pid == 0)
+		{
+			execve(full_path, args, environ);
+			perror(full_path);
+			exit(1);
 		}
 		else
 		{
-			while (token)
-			{
-				strcpy(command, token);
-				strcat(command, "/");
-				strcat(command, av[0]);
-				if (access(command, X_OK) == 0)
-				{
-					child = fork();
-					if (child == -1)
-					{
-						perror("./shell");
-						return (1);
-					}
-					else if(child == 0)
-					{
-						if (execve(command, av, NULL) == -1)
-						{
-							perror("./shell");
-							return (1);
-						}
-					}
-				else
-					wait(&status);
-				}
-				token = strtok(NULL, ":");
-			}
+			waitpid(pid, &status, 0);
+			free(full_path);
 		}
-		perror("./shell");
-		return (1);
 	}
-	free(line);
-	free(av);
 	free(command);
 	return (0);
 }
