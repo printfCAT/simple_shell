@@ -13,7 +13,7 @@ char *get_full_path(char *command)
 	path = getenv("PATH");
 	if (access(command, X_OK) == 0)
 		return (command);
-		token = strtok(path, ":");
+	token = strtok(path, ":");
 	while (token != NULL)
 	{
 		full_path = malloc(strlen(token) + strlen(command) + 2);
