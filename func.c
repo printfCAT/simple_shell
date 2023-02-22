@@ -9,7 +9,6 @@ char *get_full_path(char *command)
 {
 	char *path, *token, *full_path;
 
-	setenv("PATH", "/bin:/usr/bin", 1);
 	path = getenv("PATH");
 	if (access(command, X_OK) == 0)
 		return (command);
